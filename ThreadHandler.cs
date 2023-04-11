@@ -79,7 +79,7 @@ namespace MelonLoader
             }
             if (Program.Closing)
                 return;
-            SHA512Managed sha512 = new SHA512Managed();
+            SHA512 sha512 = SHA512.Create();
             byte[] checksum = sha512.ComputeHash(File.ReadAllBytes(temp_path));
             if ((checksum == null) || (checksum.Length <= 0))
             {

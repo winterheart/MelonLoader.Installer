@@ -24,7 +24,7 @@ namespace MelonLoader
                 return false;
             if (string.IsNullOrEmpty(args[0]))
                 return false;
-            ExePath = string.Copy(args[0]);
+            ExePath = args[0];
             if (args.Length == 1)
                 return false;
             bool breakforhelp = false;
