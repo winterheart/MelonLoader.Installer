@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using Avalonia;
+using Avalonia.ReactiveUI;
 
 namespace MelonLoader
 {
@@ -27,14 +29,21 @@ namespace MelonLoader
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionHandler;
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            System.Windows.Forms.Application.EnableVisualStyles();
+            System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             webClient = new WebClient();
             webClient.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs info) => { SetCurrentPercentage(info.ProgressPercentage); SetTotalPercentage(info.ProgressPercentage / 2); };
             Config.Load();
         }
+
+        // Avalonia configuration, don't remove; also used by visual designer.
+        public static AppBuilder BuildAvaloniaApp()
+            => AppBuilder.Configure<App>()
+                .UsePlatformDetect()
+                .UseReactiveUI()
+                .LogToTrace();
 
         [STAThread]
         private static int Main(string[] args)
@@ -44,8 +53,9 @@ namespace MelonLoader
             //int commandlineval = 0;
             //if (CommandLine.Run(args, ref commandlineval))
             //    return commandlineval;
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
             mainForm = new MainForm();
-            Application.Run(mainForm);
+            System.Windows.Forms.Application.Run(mainForm);
             return 0;
         }
 
