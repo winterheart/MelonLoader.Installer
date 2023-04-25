@@ -41,8 +41,8 @@ namespace MelonLoader
         // Avalonia configuration, don't remove; also used by visual designer.
         public static AppBuilder BuildAvaloniaApp()
             => AppBuilder.Configure<App>()
-                .UsePlatformDetect()
                 .UseReactiveUI()
+                .UsePlatformDetect()
                 .LogToTrace();
 
         [STAThread]
@@ -54,6 +54,7 @@ namespace MelonLoader
             //if (CommandLine.Run(args, ref commandlineval))
             //    return commandlineval;
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            // Old WinForms
             mainForm = new MainForm();
             System.Windows.Forms.Application.Run(mainForm);
             return 0;

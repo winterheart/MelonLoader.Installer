@@ -6,13 +6,21 @@
 		Width="480" Height="440"
 		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 		x:Class="MelonLoader.Views.MainWindow"
-		Title="MelonLoader">
+		xmlns:local="clr-namespace:MelonLoader"
+		Title="MelonLoader"
+		>
+		<!--ExtendClientAreaToDecorationsHint="True"-->	
 
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
 			 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
 		<vm:MainWindowViewModel/>
 	</Design.DataContext>
+
+	<!-- TODO: This used for AssetNameConverter which would be useless. -->
+	<Window.Resources>
+		<local:AssetNameConverter x:Key="AssetNameConverter"/>
+	</Window.Resources>
 
 	<Grid ColumnDefinitions="1*,1*,1*" RowDefinitions="1*,1*,2*" Margin="10" ShowGridLines="{Binding EnableGridLines}">
 		<StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
@@ -52,9 +60,10 @@
 						<RadioButton Margin="5" GroupName="Installation Type" Content="Manual Zip"/>
 					</DockPanel>
 					<!-- Automated panel selection -->
-					<DockPanel IsVisible="{Binding IsAutomated}" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" >
+					<!-- Grid.Column="0" -->
+					<DockPanel IsVisible="{Binding IsAutomated}" Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Center" >
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Version:" />
-						<ComboBox x:Name="versionComboBox" Margin="5" VerticalAlignment="Center" SelectedIndex="0" Items="{Binding ReleaseViewModels.Items}">
+						<ComboBox x:Name="versionComboBox" Margin="5" VerticalAlignment="Center" SelectedItem="{Binding SelectedRelease, Mode=TwoWay}" Items="{Binding Releases}">
 							<ComboBox.ItemTemplate>
 								<DataTemplate>
 									<TextBlock Text="{Binding TagName}" />
@@ -63,15 +72,18 @@
 						</ComboBox>
 					</DockPanel>
 					<!-- Automated panel selection -->
+					<!-- Since in automated mode Installer should automatically detect game's architecture, manual force is useless. Commented by now.
 					<DockPanel IsVisible="{Binding IsAutomated}" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" >
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Game Arch:" />
-						<ComboBox Margin="5" VerticalAlignment="Center" SelectedIndex="0">
-							<ComboBoxItem>Auto-Detect</ComboBoxItem>
-							<ComboBoxItem>Linux x64</ComboBoxItem>
-							<ComboBoxItem>Windows x86</ComboBoxItem>
-							<ComboBoxItem>Windows x64</ComboBoxItem>
+						<ComboBox Margin="5" VerticalAlignment="Center" SelectedIndex="0" SelectedItem="{Binding SelectedReleaseAsset}" Items="{Binding ReleaseAssets}">
+							<ComboBox.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding Name, Converter={StaticResource AssetNameConverter}}" />
+								</DataTemplate>
+							</ComboBox.ItemTemplate>
 						</ComboBox>
 					</DockPanel>
+					-->
 					<!-- Manual panel selection -->
 					<DockPanel IsVisible="{Binding !IsAutomated}" Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Center" >
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Zip Archive:" />

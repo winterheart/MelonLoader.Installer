@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using MelonLoader.Models;
 using MelonLoader.Services;
 using MelonLoader.ViewModels;
 using MelonLoader.Views;
@@ -18,10 +19,11 @@ namespace MelonLoader
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                var source = new MelonReleasesService();
+                var releases = new MelonReleasesService();
+                var settings = new Settings();
                 desktop.MainWindow = new MainWindow
                 {
-                    DataContext = new MainWindowViewModel(source),
+                    DataContext = new MainWindowViewModel(settings, releases),
                 };
             }
 
