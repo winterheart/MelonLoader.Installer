@@ -9,11 +9,9 @@ using Octokit;
 using ReactiveUI;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace MelonLoader.ViewModels
 {
@@ -69,6 +67,11 @@ namespace MelonLoader.ViewModels
 
             var filterPreReleases = this.WhenAnyValue(x => x.ShowAlphaPreReleases)
                .Select(MakeFilter);
+
+            if (Version != service.MelonInstallerRelease.Name)
+            {
+                IsUpdateAvailable = true;
+            }
 
             service.Connect()
                 .Filter(x => !x.TagName.StartsWith("v0.1") && !x.TagName.StartsWith("v0.2"))
@@ -282,21 +285,21 @@ namespace MelonLoader.ViewModels
 
         public static void OpenDiscordURL()
         {
-            OpenURL(Config.Link_Discord);
+            OpenURL(Settings.LinkDiscord);
         }
 
         public static void OpenTwitterURL()
         {
-            OpenURL(Config.Link_Twitter);
+            OpenURL(Settings.LinkTwitter);
         }
 
         public static void OpenGitHubURL()
         {
-            OpenURL(Config.Link_GitHub);
+            OpenURL(Settings.LinkGitHub);
         }
         public static void OpenWikiURL()
         {
-            OpenURL(Config.Link_Wiki);
+            OpenURL(Settings.LinkWiki);
         }
 
         private static void OpenURL(string url)
