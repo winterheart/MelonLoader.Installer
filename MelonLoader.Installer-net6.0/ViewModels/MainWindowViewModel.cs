@@ -21,13 +21,10 @@ namespace MelonLoader.Installer.ViewModels
         private bool _isUpdateAvailable = false;
         private bool _enableInstallButton;
         private string _manualZip = "";
-        private string _unityGameExe = "";
+        private Game _game = new();
         private Release _selectedRelease;
-        private ReleaseAsset _selectedReleaseAsset;
         private Settings _settings;
         private readonly ReadOnlyObservableCollection<Release> _releases;
-        private readonly SourceList<ReleaseAsset> _releaseAssetList = new();
-        private readonly ReadOnlyObservableCollection<ReleaseAsset> _releaseAssets;
 
         /// <summary>
         /// Try to enable Install button based on state of three variables:
@@ -46,14 +43,6 @@ namespace MelonLoader.Installer.ViewModels
             {
                 EnableInstallButton = false;
             }
-        }
-
-        private void UpdateReleaseAssetList(Release release)
-        {
-            _releaseAssetList.Clear();
-            var dict = release.Assets.ToDictionary(keySelector: x => x.Name, elementSelector: x => x);
-            _releaseAssetList.AddRange(release.Assets);
-            SelectedReleaseAsset = ReleaseAssets.First();
         }
 
         private Func<Release, bool> MakeFilter(bool showPrereleases)
@@ -85,18 +74,8 @@ namespace MelonLoader.Installer.ViewModels
             
             _selectedRelease = _releases.First();
 
-            _releaseAssetList.AddRange(_selectedRelease.Assets);
-            _releaseAssetList.Connect()
-                .Filter(x => x.Name.EndsWith(".zip"))
-                .Bind(out _releaseAssets)
-                .Subscribe();
-            _selectedReleaseAsset = _releaseAssets.First();
-
             this.WhenAnyValue(x => x.IsAutomated, x => x.UnityGameExe, x => x.ManualZip)
                 .Subscribe(x => TryEnableInstallButton());
-
-            this.WhenAnyValue(x => x.SelectedRelease)
-                .Subscribe(x => UpdateReleaseAssetList(SelectedRelease));
 
             this.WhenAnyValue(
                 x => x.AutoUpdateInstaller,
@@ -208,10 +187,12 @@ namespace MelonLoader.Installer.ViewModels
 
         public string UnityGameExe
         {
-            get { return _unityGameExe; }
+            get { return _game.GamePath; }
             set {
                 // TODO: Check value for actual Path instance
-                this.RaiseAndSetIfChanged(ref _unityGameExe, value);
+                if (_game.GamePath == value) return;
+                _game.GamePath = value;
+                this.RaisePropertyChanged();
             }
         }
 
@@ -237,14 +218,7 @@ namespace MelonLoader.Installer.ViewModels
             set { this.RaiseAndSetIfChanged(ref _selectedRelease, value); }
         }
 
-        public ReleaseAsset SelectedReleaseAsset
-        {
-            get { return _selectedReleaseAsset; }
-            set { this.RaiseAndSetIfChanged(ref _selectedReleaseAsset, value); }
-        }
-
         public ReadOnlyObservableCollection<Release> Releases => _releases;
-        public ReadOnlyObservableCollection<ReleaseAsset> ReleaseAssets => _releaseAssets;
 
         public static string Version => "3.0.8"; // BuildInfo.Version;
 

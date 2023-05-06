@@ -80,19 +80,6 @@
 							</ComboBox.ItemTemplate>
 						</ComboBox>
 					</DockPanel>
-					<!-- Automated panel selection -->
-					<!-- Since in automated mode Installer should automatically detect game's architecture, manual force is useless. Commented by now.
-					<DockPanel IsVisible="{Binding IsAutomated}" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" >
-						<TextBlock Margin="5" VerticalAlignment="Center" Text="Game Arch:" />
-						<ComboBox Margin="5" VerticalAlignment="Center" SelectedIndex="0" SelectedItem="{Binding SelectedReleaseAsset}" Items="{Binding ReleaseAssets}">
-							<ComboBox.ItemTemplate>
-								<DataTemplate>
-									<TextBlock Text="{Binding Name, Converter={StaticResource AssetNameConverter}}" />
-								</DataTemplate>
-							</ComboBox.ItemTemplate>
-						</ComboBox>
-					</DockPanel>
-					-->
 					<!-- Manual panel selection -->
 					<DockPanel IsVisible="{Binding !IsAutomated}" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" >
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Zip Archive:" />
