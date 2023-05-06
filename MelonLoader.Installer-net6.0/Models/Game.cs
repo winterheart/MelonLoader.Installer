@@ -11,11 +11,11 @@ namespace MelonLoader.Installer.Models
     {
         [Description("Unknown")]
         Unknown = 0,
-        [Description("x86")]
+        [Description("MelonLoader.x86")]
         Windows_x86 = 1,
-        [Description("x64")]
+        [Description("MelonLoader.x64")]
         Windows_x64 = 2,
-        [Description("Linux.x64")]
+        [Description("MelonLoader.Linux.x64")]
         Linux_x64 = 3,
     };
 

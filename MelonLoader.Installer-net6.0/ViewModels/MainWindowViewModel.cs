@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using DynamicData;
 using DynamicData.Binding;
+using MelonLoader.Installer.EnumExtensions;
 using MelonLoader.Installer.Models;
 using MelonLoader.Installer.Services;
 using Octokit;
@@ -45,9 +46,25 @@ namespace MelonLoader.Installer.ViewModels
             }
         }
 
-        private Func<Release, bool> MakeFilter(bool showPrereleases)
+        private Func<Release, bool> showPreReleases(bool showPrereleases)
         {
             return release => !release.Prerelease || showPrereleases;
+        }
+
+        private Func<Release, bool> showArches(string arch)
+        {
+            if (_game.GameArch == Arhitectures.Unknown) return release => true;
+            return release => {
+                foreach (var asset in release.Assets)
+                {
+                    var test = _game.GameArch.GetDescription();
+                    if (asset.Name.Contains(_game.GameArch.GetDescription()))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            };
         }
 
         public MainWindowViewModel(Settings settings, MelonReleasesService service)
@@ -55,7 +72,9 @@ namespace MelonLoader.Installer.ViewModels
             _settings = settings;
 
             var filterPreReleases = this.WhenAnyValue(x => x.ShowAlphaPreReleases)
-               .Select(MakeFilter);
+                .Select(showPreReleases);
+            var filterArches = this.WhenAnyValue(x => x.UnityGameExe)
+                .Select(showArches);
 
             /*
             if (Version != service.MelonInstallerRelease.Name)
@@ -67,6 +86,7 @@ namespace MelonLoader.Installer.ViewModels
             service.Connect()
                 .Filter(x => !x.TagName.StartsWith("v0.1") && !x.TagName.StartsWith("v0.2"))
                 .Filter(filterPreReleases)
+                .Filter(filterArches)
                 .Sort(SortExpressionComparer<Release>.Descending(t => t.TagName))
                 .Bind(out _releases)
                 .DisposeMany()
@@ -194,6 +214,11 @@ namespace MelonLoader.Installer.ViewModels
                 _game.GamePath = value;
                 this.RaisePropertyChanged();
             }
+        }
+
+        public Arhitectures UnityGameArh
+        {
+            get { return _game.GameArch; }
         }
 
         public string ManualZip
