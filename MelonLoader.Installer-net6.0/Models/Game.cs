@@ -44,13 +44,13 @@ namespace MelonLoader.Installer.Models
             const int ELF_MACHINE_OFFSET = 18;
             const int ELF_EM_X86_64 = 62;
 
+            const int PE_MAGIC = 0x00004550;    // 'P', 'E', '0x0', '0x0'
             const int PE_POINTER_OFFSET = 60;
-            const int PE_MACHINE_OFFSET = 4;
-            const int PE_X86 = 0x014c;
-            const int PE_X64 = 0x8664;
+            const int PE_IMAGE_FILE_MACHINE_I386 = 0x014c;
+            const int PE_IMAGE_FILE_MACHINE_AMD64 = 0x8664;
             int machineUint = 0;
 
-            byte[] data = new byte[4096];
+            byte[] data = new byte[4];
 
             
             if (File.Exists(path))
@@ -59,26 +59,40 @@ namespace MelonLoader.Installer.Models
                     // First try to determine if there Linux ELF. This is very simple
                     using (Stream s = new FileStream(path, FileMode.Open, FileAccess.Read))
                     {
-                        s.Read(data, 0, 20);
+                        s.Read(data, 0, 4);
+                        int elfMagic = BitConverter.ToInt32(data, 0);
+                        s.Seek(ELF_MACHINE_OFFSET, 0);
+                        s.Read(data, 0, 2);
+                        machineUint = BitConverter.ToUInt16(data, 0);
+
+                        if (elfMagic == ELF_MAGIC && machineUint == ELF_EM_X86_64)
+                        {
+                            return Arhitectures.Linux_x64;
+                        }
+
+                        // This is not a Linux system... Guess this is Windows?
+                        s.Seek(PE_POINTER_OFFSET, 0);
+                        s.Read(data, 0, 4);
+                        int peHeaderPtr = BitConverter.ToInt32(data, 0);
+                        s.Seek(peHeaderPtr, 0);
+                        s.Read(data, 0, 4);
+                        int peMagic = BitConverter.ToInt32(data, 0);
+                        if (peMagic != PE_MAGIC)
+                        {
+                            return Arhitectures.Unknown;
+                        }
+                        s.Read(data, 0, 2);
+                        machineUint = BitConverter.ToUInt16(data, 0);
+
+                        if (machineUint == PE_IMAGE_FILE_MACHINE_AMD64)
+                        {
+                            return Arhitectures.Windows_x64;
+                        }
+                        if (machineUint == PE_IMAGE_FILE_MACHINE_I386)
+                        {
+                            return Arhitectures.Windows_x86;
+                        }
                     }
-
-                    int ELF_HEADER_MAGIC = BitConverter.ToInt32(data, 0);
-                    machineUint = BitConverter.ToUInt16(data, ELF_MACHINE_OFFSET);
-
-                    if (ELF_HEADER_MAGIC == ELF_MAGIC && machineUint == ELF_EM_X86_64)
-                    {
-                        return Arhitectures.Linux_x64;
-                    }
-
-                    // This is not a Linux system... Guess this is Windows?
-                    using (Stream s = new FileStream(path, FileMode.Open, FileAccess.Read))
-                    {
-                        s.Read(data, 0, 4096);
-                    }
-
-                    // DOS header is 64 bytes, last element, long (4 bytes) is the address of the PE header
-                    int PE_HEADER_ADDR = BitConverter.ToInt32(data, PE_POINTER_OFFSET);
-                    machineUint = BitConverter.ToUInt16(data, PE_HEADER_ADDR + PE_MACHINE_OFFSET);
                 }
                 catch (Exception ex)
                 {
@@ -87,12 +101,7 @@ namespace MelonLoader.Installer.Models
                 }
             }
 
-            switch (machineUint)
-            {
-                case PE_X64: return Arhitectures.Windows_x64;
-                case PE_X86: return Arhitectures.Windows_x86;
-                default: return Arhitectures.Unknown;
-            }
+            return Arhitectures.Unknown;
         }
 
         private NuGetVersion getVersion(string path)
