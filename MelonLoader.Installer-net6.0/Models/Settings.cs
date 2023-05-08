@@ -20,6 +20,11 @@ namespace MelonLoader.Installer.Models
         /// </summary>
         public static string MelonLoaderInstallerRepoName { get; } = "MelonLoader.Installer";
 
+        /// <summary>
+        /// All versions below SupportedVersion will be not shown in version selector
+        /// </summary>
+        public static string SupportedVersion { get; } = "0.3.0";
+
         public static string LinkDiscord { get; } = "https://discord.gg/2Wn3N2P";
         public static string LinkTwitter { get; } = "https://twitter.com/lava_gang";
         public static string LinkGitHub { get; } = "https://github.com/LavaGang";

@@ -9,20 +9,6 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/Icon.ico"
         Title="MelonLoader.Installer">
-<!--
-<Window xmlns="https://github.com/avaloniaui"
-		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:vm="using:MelonLoader.Installer.ViewModels"
-		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		Width="480" Height="440"
-		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-		x:Class="MelonLoader.Installer.Views.MainWindow"
-		x:DataType="vm:MainWindowViewModel"
-		xmlns:local="clr-namespace:MelonLoader.Installer"
-		Title="MelonLoader.Installer"
-		>
--->
 		<!--ExtendClientAreaToDecorationsHint="True"-->	
 
 	<Design.DataContext>
@@ -62,7 +48,7 @@
 					<DockPanel Grid.Row="0" Grid.Column="0">
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Unity Game:" />
 						<Button Margin="5" VerticalAlignment="Center" Command="{Binding UnityExeOpenFileDialog}">SELECT</Button>
-						<TextBox Margin="5" VerticalAlignment="Center" Watermark="Please Select your Unity Game..." Text="{Binding UnityGameExe, Mode=TwoWay}"/>
+						<TextBox Margin="5" VerticalAlignment="Center" Watermark="Select Unity Game..." Text="{Binding UnityGameExe, Mode=TwoWay}"/>
 					</DockPanel>
 					<DockPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center">
 						<RadioButton IsChecked="{Binding IsAutomated}" IsDefault="True" Margin="5" GroupName="Installation Type" Content="Automated"/>
@@ -84,7 +70,7 @@
 					<DockPanel IsVisible="{Binding !IsAutomated}" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" >
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Zip Archive:" />
 						<Button Margin="5" VerticalAlignment="Center" Command="{Binding ManualZipOpenFileDialog}">SELECT</Button>
-						<TextBox Margin="5" VerticalAlignment="Center" Watermark="Please Select your MelonLoader Zip Archive..." Text="{Binding ManualZip, Mode=TwoWay}" />
+						<TextBox Margin="5" VerticalAlignment="Center" Watermark="Select MelonLoader Zip Archive..." Text="{Binding ManualZip, Mode=TwoWay}" />
 					</DockPanel>
 					<!-- Install -->
 					<DockPanel Grid.Row="4" Grid.Column="0">

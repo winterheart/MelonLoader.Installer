@@ -1,14 +1,16 @@
 ﻿using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using DynamicData;
 using DynamicData.Binding;
 using MelonLoader.Installer.EnumExtensions;
 using MelonLoader.Installer.Models;
 using MelonLoader.Installer.Services;
+using NuGet.Versioning;
 using Octokit;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -84,7 +86,7 @@ namespace MelonLoader.Installer.ViewModels
             */
 
             service.Connect()
-                .Filter(x => !x.TagName.StartsWith("v0.1") && !x.TagName.StartsWith("v0.2"))
+                .Filter(x => new NuGetVersion(x.TagName.Substring(1)) >= new NuGetVersion(Settings.SupportedVersion))
                 .Filter(filterPreReleases)
                 .Filter(filterArches)
                 .Sort(SortExpressionComparer<Release>.Descending(t => t.TagName))
@@ -250,36 +252,50 @@ namespace MelonLoader.Installer.ViewModels
 
         public async void UnityExeOpenFileDialog()
         {
-            if (Avalonia.Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                 && desktop.MainWindow is not null)
             {
-                var fileDialog = new OpenFileDialog
-                {
+                var result = await desktop.MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions(){
                     Title = "Select Unity Game Executable",
-                    Directory = Environment.CurrentDirectory,
-                };
-                var result = await fileDialog.ShowAsync(desktop.MainWindow);
-                if (result != null && !string.IsNullOrEmpty(result.FirstOrDefault()))
+                    AllowMultiple = false,
+                    /*
+                    FileTypeFilter = new List<FilePickerFileType>()
+                    {
+                        new FilePickerFileType("All files (*.*)")
+                        {
+                            Patterns = new List<string>() { "*" },
+                        },
+                    }
+                    */
+                });
+
+                if (result.Count != 0)
                 {
-                    UnityGameExe = result[0];
+                    UnityGameExe = result[0].Path.LocalPath;
                 }
             }
         }
 
         public async void ManualZipOpenFileDialog()
         {
-            if (Avalonia.Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                 && desktop.MainWindow is not null)
             {
-                var fileDialog = new OpenFileDialog
+                var result = await desktop.MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions(){
+                    Title = "Select MelonLoader ZIP File",
+                    AllowMultiple = false,
+                    FileTypeFilter = new List<FilePickerFileType>()
+                    {
+                        new FilePickerFileType("ZIP archives (*.zip)")
+                        {
+                            Patterns = new List<string>() { "*.zip" },
+                            // MimeTypes = new List<string>() { "application/zip" },
+                        },
+                    }
+                });
+                if (result.Count != 0)
                 {
-                    Title = "Select Melon Zip File",
-                    Directory = Environment.CurrentDirectory,
-                };
-                var result = await fileDialog.ShowAsync(desktop.MainWindow);
-                if (result != null && !string.IsNullOrEmpty(result.FirstOrDefault()))
-                {
-                    ManualZip = result[0];
+                    ManualZip = result[0].Path.LocalPath;
                 }
             }
         }
