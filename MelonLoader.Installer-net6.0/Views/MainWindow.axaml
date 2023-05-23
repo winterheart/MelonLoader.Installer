@@ -21,16 +21,16 @@
 	      ShowGridLines="{Binding EnableGridLines}">
 		<StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
 			<StackPanel Orientation="Horizontal" Spacing="3">
-				<Button Width="24" Height="24" Command="{Binding OpenDiscordURL}">
+				<Button Width="24" Height="24" Command="{Binding OpenDiscordUrl}">
 					<Image Name="DiscordButton" Width="24" Height="24" Source="/Assets/Discord.png" />
 				</Button>
-				<Button Width="24" Height="24" Command="{Binding OpenTwitterURL}">
+				<Button Width="24" Height="24" Command="{Binding OpenTwitterUrl}">
 					<Image Name="TwitterButton" Width="24" Height="24" Source="/Assets/Twitter.png" />
 				</Button>
-				<Button Width="24" Height="24" Command="{Binding OpenGitHubURL}">
+				<Button Width="24" Height="24" Command="{Binding OpenGitHubUrl}">
 					<Image Name="GithubButton" Width="24" Height="24" Source="/Assets/GitHub_Light.png" />
 				</Button>
-				<Button Width="24" Height="24" Command="{Binding OpenWikiURL}">
+				<Button Width="24" Height="24" Command="{Binding OpenWikiUrl}">
 					<Image Name="WikiButton" Width="24" Height="24" Source="/Assets/Wiki.png" />
 				</Button>
 			</StackPanel>

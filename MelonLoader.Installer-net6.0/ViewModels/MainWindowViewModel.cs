@@ -13,7 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reactive.Linq;
 
 namespace MelonLoader.Installer.ViewModels
@@ -48,24 +50,16 @@ namespace MelonLoader.Installer.ViewModels
             }
         }
 
-        private Func<Release, bool> showPreReleases(bool showPrereleases)
+        private static Func<Release, bool> ShowPreReleases(bool showPrereleases)
         {
             return release => !release.Prerelease || showPrereleases;
         }
 
-        private Func<Release, bool> showArches(string arch)
+        private Func<Release, bool> ShowArches(string arch)
         {
-            if (_game.GameArch == Arhitectures.Unknown) return release => true;
+            if (_game.GameArch == Architectures.Unknown) return release => true;
             return release => {
-                foreach (var asset in release.Assets)
-                {
-                    var test = _game.GameArch.GetDescription();
-                    if (asset.Name.Contains(_game.GameArch.GetDescription()))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                return release.Assets.Any(asset => asset.Name.Contains(_game.GameArch.GetDescription()));
             };
         }
 
@@ -74,9 +68,9 @@ namespace MelonLoader.Installer.ViewModels
             _settings = settings;
 
             var filterPreReleases = this.WhenAnyValue(x => x.ShowAlphaPreReleases)
-                .Select(showPreReleases);
+                .Select(ShowPreReleases);
             var filterArches = this.WhenAnyValue(x => x.UnityGameExe)
-                .Select(showArches);
+                .Select(ShowArches);
 
             /*
             if (Version != service.MelonInstallerRelease.Name)
@@ -86,7 +80,7 @@ namespace MelonLoader.Installer.ViewModels
             */
 
             service.Connect()
-                .Filter(x => new NuGetVersion(x.TagName.Substring(1)) >= new NuGetVersion(Settings.SupportedVersion))
+                .Filter(x => new NuGetVersion(x.TagName[1..]) >= new NuGetVersion(Settings.SupportedVersion))
                 .Filter(filterPreReleases)
                 .Filter(filterArches)
                 .Sort(SortExpressionComparer<Release>.Descending(t => t.TagName))
@@ -120,7 +114,7 @@ namespace MelonLoader.Installer.ViewModels
         // Settings properties
         public bool AutoUpdateInstaller
         {
-            get { return _settings.AutoUpdateInstaller; }
+            get => _settings.AutoUpdateInstaller;
             set
             {
                 if (_settings.AutoUpdateInstaller == value) return;
@@ -130,7 +124,7 @@ namespace MelonLoader.Installer.ViewModels
         }
         public bool CloseAfterCompletion
         {
-            get { return _settings.CloseAfterCompletion; }
+            get => _settings.CloseAfterCompletion;
             set
             {
                 if (_settings.CloseAfterCompletion == value) return;
@@ -140,8 +134,7 @@ namespace MelonLoader.Installer.ViewModels
         }
             
         public bool HighlightLogFileLocation {
-            get
-            { return _settings.HighlightLogFileLocation; }
+            get => _settings.HighlightLogFileLocation;
             set
             {
                 if (_settings.HighlightLogFileLocation == value) return;
@@ -150,8 +143,7 @@ namespace MelonLoader.Installer.ViewModels
             }
         }
         public bool RememberLastSelectedGame {
-            get
-            { return _settings.RememberLastSelectedGame; }
+            get => _settings.RememberLastSelectedGame;
             set
             {
                 if (_settings.RememberLastSelectedGame == value)
@@ -162,7 +154,7 @@ namespace MelonLoader.Installer.ViewModels
         }
         public bool ShowAlphaPreReleases
         {
-            get { return _settings.ShowAlphaPreReleases; }
+            get => _settings.ShowAlphaPreReleases;
             set
             {
                 if (_settings.ShowAlphaPreReleases == value) return;
@@ -172,7 +164,7 @@ namespace MelonLoader.Installer.ViewModels
         }
         public bool UseDarkTheme
         {
-            get { return _settings.Theme == 0; }
+            get => _settings.Theme == 0;
             set
             {
                 if (_settings.Theme == (value ? 1 : 0)) return;
@@ -182,7 +174,7 @@ namespace MelonLoader.Installer.ViewModels
         }
 
         public string LastSelectedGamePath {
-            get { return _settings.LastSelectedGamePath; }
+            get => _settings.LastSelectedGamePath;
             set
             {
                 if (_settings.LastSelectedGamePath == value) return;
@@ -195,21 +187,19 @@ namespace MelonLoader.Installer.ViewModels
 
         public bool IsAutomated
         {
-            get { return _isAutomated; }
-            set {
-                this.RaiseAndSetIfChanged(ref _isAutomated, value);
-            }
+            get => _isAutomated;
+            set => this.RaiseAndSetIfChanged(ref _isAutomated, value);
         }
 
         public bool IsUpdateAvailable
         {
-            get { return _isUpdateAvailable; }
-            set { this.RaiseAndSetIfChanged(ref _isUpdateAvailable, value); }
+            get => _isUpdateAvailable;
+            set => this.RaiseAndSetIfChanged(ref _isUpdateAvailable, value);
         }
 
         public string UnityGameExe
         {
-            get { return _game.GamePath; }
+            get => _game.GamePath;
             set {
                 // TODO: Check value for actual Path instance
                 if (_game.GamePath == value) return;
@@ -218,31 +208,25 @@ namespace MelonLoader.Installer.ViewModels
             }
         }
 
-        public Arhitectures UnityGameArh
-        {
-            get { return _game.GameArch; }
-        }
+        public Architectures UnityGameArch => _game.GameArch;
 
         public string ManualZip
         {
-            get { return _manualZip; }
-            set
-            {
-                // TODO: Check value for actual Path instance
-                this.RaiseAndSetIfChanged(ref _manualZip, value);
-            }
+            get => _manualZip;
+            // TODO: Check value for actual Path instance
+            set => this.RaiseAndSetIfChanged(ref _manualZip, value);
         }
 
         public bool EnableInstallButton
         {
-            get { return _enableInstallButton; }
-            set { this.RaiseAndSetIfChanged(ref _enableInstallButton, value); }
+            get => _enableInstallButton;
+            set => this.RaiseAndSetIfChanged(ref _enableInstallButton, value);
         }
 
         public Release SelectedRelease
         {
-            get { return _selectedRelease; }
-            set { this.RaiseAndSetIfChanged(ref _selectedRelease, value); }
+            get => _selectedRelease;
+            set => this.RaiseAndSetIfChanged(ref _selectedRelease, value);
         }
 
         public ReadOnlyObservableCollection<Release> Releases => _releases;
@@ -252,13 +236,14 @@ namespace MelonLoader.Installer.ViewModels
 
         public async void UnityExeOpenFileDialog()
         {
-            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                && desktop.MainWindow is not null)
-            {
-                var result = await desktop.MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions(){
-                    Title = "Select Unity Game Executable",
-                    AllowMultiple = false,
-                    /*
+            if (Avalonia.Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime
+                {
+                    MainWindow: not null
+                } desktop) return;
+            var result = await desktop.MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions(){
+                Title = "Select Unity Game Executable",
+                AllowMultiple = false,
+                /*
                     FileTypeFilter = new List<FilePickerFileType>()
                     {
                         new FilePickerFileType("All files (*.*)")
@@ -267,59 +252,58 @@ namespace MelonLoader.Installer.ViewModels
                         },
                     }
                     */
-                });
+            });
 
-                if (result.Count != 0)
-                {
-                    UnityGameExe = result[0].Path.LocalPath;
-                }
+            if (result.Count != 0)
+            {
+                UnityGameExe = result[0].Path.LocalPath;
             }
         }
 
         public async void ManualZipOpenFileDialog()
         {
-            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                && desktop.MainWindow is not null)
-            {
-                var result = await desktop.MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions(){
-                    Title = "Select MelonLoader ZIP File",
-                    AllowMultiple = false,
-                    FileTypeFilter = new List<FilePickerFileType>()
-                    {
-                        new FilePickerFileType("ZIP archives (*.zip)")
-                        {
-                            Patterns = new List<string>() { "*.zip" },
-                            // MimeTypes = new List<string>() { "application/zip" },
-                        },
-                    }
-                });
-                if (result.Count != 0)
+            if (Avalonia.Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime
                 {
-                    ManualZip = result[0].Path.LocalPath;
+                    MainWindow: not null
+                } desktop) return;
+            var result = await desktop.MainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions(){
+                Title = "Select MelonLoader ZIP File",
+                AllowMultiple = false,
+                FileTypeFilter = new List<FilePickerFileType>()
+                {
+                    new FilePickerFileType("ZIP archives (*.zip)")
+                    {
+                        Patterns = new List<string>() { "*.zip" },
+                        // MimeTypes = new List<string>() { "application/zip" },
+                    },
                 }
+            });
+            if (result.Count != 0)
+            {
+                ManualZip = result[0].Path.LocalPath;
             }
         }
 
         public static void OpenDiscordURL()
         {
-            OpenURL(Settings.LinkDiscord);
+            OpenUrl(Settings.LinkDiscord);
         }
 
-        public static void OpenTwitterURL()
+        public static void OpenTwitterUrl()
         {
-            OpenURL(Settings.LinkTwitter);
+            OpenUrl(Settings.LinkTwitter);
         }
 
-        public static void OpenGitHubURL()
+        public static void OpenGitHubUrl()
         {
-            OpenURL(Settings.LinkGitHub);
+            OpenUrl(Settings.LinkGitHub);
         }
-        public static void OpenWikiURL()
+        public static void OpenWikiUrl()
         {
-            OpenURL(Settings.LinkWiki);
+            OpenUrl(Settings.LinkWiki);
         }
 
-        private static void OpenURL(string url)
+        private static void OpenUrl(string url)
         {
             try
 	        {
