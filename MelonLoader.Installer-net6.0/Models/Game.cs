@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 
 namespace MelonLoader.Installer.Models
 {
@@ -34,9 +36,8 @@ namespace MelonLoader.Installer.Models
                 _melonLoaderVersion = GetVersion(_gamePath);
             }
         }
-        public Architectures GameArch { get => _gameArch; }
-        public NuGetVersion MelonLoaderVersion { get => _melonLoaderVersion; }
-
+        public Architectures GameArch => _gameArch;
+        public NuGetVersion MelonLoaderVersion => _melonLoaderVersion;
 
         private static Architectures GetArchitecture(string path)
         {
@@ -49,8 +50,7 @@ namespace MelonLoader.Installer.Models
             const int PE_IMAGE_FILE_MACHINE_I386 = 0x014c;
             const int PE_IMAGE_FILE_MACHINE_AMD64 = 0x8664;
 
-            byte[] data = new byte[4];
-
+            var data = new byte[4];
             
             if (File.Exists(path))
             {
@@ -59,7 +59,7 @@ namespace MelonLoader.Installer.Models
                     using (Stream s = new FileStream(path, FileMode.Open, FileAccess.Read))
                     {
                         s.Read(data, 0, 4);
-                        int elfMagic = BitConverter.ToInt32(data, 0);
+                        var elfMagic = BitConverter.ToInt32(data, 0);
                         s.Seek(ELF_MACHINE_OFFSET, 0);
                         s.Read(data, 0, 2);
                         int machineUint = BitConverter.ToUInt16(data, 0);
@@ -72,10 +72,10 @@ namespace MelonLoader.Installer.Models
                         // This is not a Linux system... Guess this is Windows?
                         s.Seek(PE_POINTER_OFFSET, 0);
                         s.Read(data, 0, 4);
-                        int peHeaderPtr = BitConverter.ToInt32(data, 0);
+                        var peHeaderPtr = BitConverter.ToInt32(data, 0);
                         s.Seek(peHeaderPtr, 0);
                         s.Read(data, 0, 4);
-                        int peMagic = BitConverter.ToInt32(data, 0);
+                        var peMagic = BitConverter.ToInt32(data, 0);
                         if (peMagic != PE_MAGIC)
                         {
                             return Architectures.Unknown;
@@ -83,20 +83,18 @@ namespace MelonLoader.Installer.Models
                         s.Read(data, 0, 2);
                         machineUint = BitConverter.ToUInt16(data, 0);
 
-                        if (machineUint == PE_IMAGE_FILE_MACHINE_AMD64)
+                        switch (machineUint)
                         {
-                            return Architectures.WindowsX64;
-                        }
-                        if (machineUint == PE_IMAGE_FILE_MACHINE_I386)
-                        {
-                            return Architectures.WindowsX86;
+                            case PE_IMAGE_FILE_MACHINE_AMD64:
+                                return Architectures.WindowsX64;
+                            case PE_IMAGE_FILE_MACHINE_I386:
+                                return Architectures.WindowsX86;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    // TODO: Logging
-                    throw;
+                    // TODO: Log and handle
                 }
             }
 
@@ -105,45 +103,165 @@ namespace MelonLoader.Installer.Models
 
         private NuGetVersion GetVersion(string path)
         {
-            if (File.Exists(path) && _gameArch != Architectures.Unknown)
-            {
-                try {
-                    var gameDir = Path.GetDirectoryName(path);
-                    var folderPath = Path.Combine(gameDir, "MelonLoader");
+            if (!File.Exists(path) || _gameArch == Architectures.Unknown) return new NuGetVersion(0, 0, 0);
+            try {
+                var baseDir = Path.GetDirectoryName(path);
+                var melonDir = Path.Combine(baseDir!, "MelonLoader");
 
-                    List<string> guessPath = new List<string>()
-                    {
-                        Path.Combine(folderPath, "MelonLoader.ModHandler.dll"), // Legacy path
-                        Path.Combine(folderPath, "MelonLoader.dll"),            // Old path
-                        Path.Combine(folderPath, "net35", "MelonLoader.dll"),   // New path
-                    };
-
-                    foreach (var testPath in guessPath)
-                    {
-                        if (File.Exists(testPath))
-                        {
-                            string? fileversion = null;
-                            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(testPath);
-                            fileversion = fileVersionInfo.FileVersion;
-                            if (string.IsNullOrEmpty(fileversion))
-                                fileversion = fileVersionInfo.ProductVersion;
-
-                            if (!string.IsNullOrEmpty(fileversion))
-                                return new NuGetVersion(fileversion);
-
-                        }
-                    }
-                }
-                catch (Exception ex)
+                var guessPath = new List<string>
                 {
-                    // TODO: Logging
-                    throw;
+                    Path.Combine(melonDir, "MelonLoader.ModHandler.dll"), // Legacy path
+                    Path.Combine(melonDir, "MelonLoader.dll"),            // Old path
+                    Path.Combine(melonDir, "net35", "MelonLoader.dll"),   // New path
+                };
+
+                foreach (var testPath in guessPath)
+                {
+                    if (!File.Exists(testPath)) continue;
+                    var fileVersionInfo = FileVersionInfo.GetVersionInfo(testPath);
+                    var fileversion = fileVersionInfo.FileVersion;
+                    if (string.IsNullOrEmpty(fileversion))
+                        fileversion = fileVersionInfo.ProductVersion;
+
+                    if (!string.IsNullOrEmpty(fileversion))
+                        return new NuGetVersion(fileversion);
                 }
-                
+            }
+            catch (Exception ex)
+            {
+                // TODO: Logging
+                throw;
             }
             return new NuGetVersion(0, 0, 0);
         }
 
+        public void InstallMelonLoader(Stream zipArchiveStream)
+        {
+            var baseDir = Path.GetDirectoryName(GamePath);
+
+            ExtraCreate(baseDir!);
+            using var zip = new ZipArchive(zipArchiveStream);
+
+            foreach (var entry in zip.Entries)
+            {
+                var path = Path.Combine(baseDir!, entry.FullName);
+                var filename = Path.GetFileName(path);
+                if (!string.IsNullOrEmpty(filename))
+                {
+                    var directory = Path.GetDirectoryName(path);
+                    if (!Directory.Exists(directory))
+                        Directory.CreateDirectory(directory!);
+                    using var targetStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                    using var entryStream = entry.Open();
+                    try
+                    {
+                        entryStream.CopyTo(targetStream);
+                    }
+                    catch (Exception ex)
+                    {
+                        // TODO: Log and handle
+                    }
+                    continue;
+                }
+
+                if (!Directory.Exists(path))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        // TODO: Log and handle
+                    }
+                }
+            }
+            _melonLoaderVersion = GetVersion(GamePath);
+        }
+        
+        public void UninstallMelonLoader()
+        {
+            var baseDir = Path.GetDirectoryName(GamePath);
+            var melonDir = Path.Combine(baseDir!, "MelonLoader");
+            try
+            {
+                if (Directory.Exists(melonDir))
+                    Directory.Delete(melonDir, true);
+                ExtraCleanup(baseDir!);
+            }
+            catch (Exception ex)
+            {
+                // TODO: Log and handle
+            }
+
+            _melonLoaderVersion = GetVersion(GamePath);
+        }
+
+        private static void ExtraCreate(string destination)
+        {
+            var createPaths = new List<string>
+            {
+                Path.Combine(destination, "Mods"),
+                Path.Combine(destination, "Plugins"),
+                Path.Combine(destination, "UserData"),
+            };
+            foreach (var path in createPaths.Where(path => !Directory.Exists(path)))
+            {
+                try
+                {
+                    Directory.CreateDirectory(path);
+                }
+                catch (Exception ex)
+                {
+                    // TODO: log and exception handle
+                }
+            }
+        }
+        
+        private static void ExtraCleanup(string destination)
+        {
+            var deletePaths = new List<string>
+            {
+                Path.Combine(destination, "version.dll"),
+                Path.Combine(destination, "winmm.dll"),
+                Path.Combine(destination, "winhttp.dll"),
+                Path.Combine(destination, "dobby.dll"),
+                Path.Combine(destination, "MelonLoader.dll"),
+                Path.Combine(destination, "Mods", "MelonLoader.dll"),
+                Path.Combine(destination, "Plugins", "MelonLoader.dll"),
+                Path.Combine(destination, "UserData", "MelonLoader.dll"),
+                Path.Combine(destination, "MelonLoader.ModHandler.dll"),
+                Path.Combine(destination, "Mods", "MelonLoader.ModHandler.dll"),
+                Path.Combine(destination, "Plugins", "MelonLoader.ModHandler.dll"),
+                Path.Combine(destination, "UserData", "MelonLoader.ModHandler.dll"),
+            };
+            var logPath = Path.Combine(destination, "Logs");
+            foreach (var file in deletePaths.Where(File.Exists))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception ex)
+                {
+                    // TODO: log and exception handle
+                }
+                
+            }
+
+            if (Directory.Exists(logPath))
+            {
+                try
+                {
+                    Directory.Delete(logPath, true);
+                }
+                catch (Exception e)
+                {
+                    // TODO: log and exception handle
+                }
+            }
+        }
+        
     }
 
 }

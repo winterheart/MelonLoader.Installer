@@ -13,9 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Reactive.Linq;
 
 namespace MelonLoader.Installer.ViewModels
@@ -25,6 +23,7 @@ namespace MelonLoader.Installer.ViewModels
         private bool _isAutomated = true;
         private bool _isUpdateAvailable = false;
         private bool _enableInstallButton;
+        private bool _enableUnInstallButton;
         private string _manualZip = "";
         private Game _game = new();
         private Release _selectedRelease;
@@ -47,6 +46,18 @@ namespace MelonLoader.Installer.ViewModels
             else
             {
                 EnableInstallButton = false;
+            }
+        }
+
+        private void TryEnableUninstallButton()
+        {
+            if (!string.IsNullOrEmpty(UnityGameExe) && CurrentVersion != new NuGetVersion("0.0.0"))
+            {
+                EnableUninstallButton = true;
+            }
+            else
+            {
+                EnableUninstallButton = false;
             }
         }
 
@@ -90,8 +101,18 @@ namespace MelonLoader.Installer.ViewModels
             
             _selectedRelease = _releases.First();
 
-            this.WhenAnyValue(x => x.IsAutomated, x => x.UnityGameExe, x => x.ManualZip)
+            this.WhenAnyValue(
+                    x => x.IsAutomated,
+                    x => x.UnityGameExe,
+                    x => x.ManualZip
+                    )
                 .Subscribe(x => TryEnableInstallButton());
+
+            this.WhenAnyValue(
+                    x => x.CurrentVersion,
+                    x => x.UnityGameExe
+                )
+                .Subscribe(x => TryEnableUninstallButton());
 
             this.WhenAnyValue(
                 x => x.AutoUpdateInstaller,
@@ -183,8 +204,6 @@ namespace MelonLoader.Installer.ViewModels
             }
         }
 
-
-
         public bool IsAutomated
         {
             get => _isAutomated;
@@ -204,11 +223,23 @@ namespace MelonLoader.Installer.ViewModels
                 // TODO: Check value for actual Path instance
                 if (_game.GamePath == value) return;
                 _game.GamePath = value;
+                CurrentVersion = _game.MelonLoaderVersion;
+                UnityGameArch = _game.GameArch;
                 this.RaisePropertyChanged();
             }
         }
 
-        public Architectures UnityGameArch => _game.GameArch;
+        public NuGetVersion CurrentVersion
+        {
+            get => _game.MelonLoaderVersion;
+            set => this.RaisePropertyChanged();
+        }
+
+        public Architectures UnityGameArch
+        {
+            get => _game.GameArch;
+            set => this.RaisePropertyChanged();
+        }
 
         public string ManualZip
         {
@@ -221,6 +252,12 @@ namespace MelonLoader.Installer.ViewModels
         {
             get => _enableInstallButton;
             set => this.RaiseAndSetIfChanged(ref _enableInstallButton, value);
+        }
+
+        public bool EnableUninstallButton
+        {
+            get => _enableUnInstallButton;
+            set => this.RaiseAndSetIfChanged(ref _enableUnInstallButton, value);
         }
 
         public Release SelectedRelease
@@ -271,7 +308,7 @@ namespace MelonLoader.Installer.ViewModels
                 AllowMultiple = false,
                 FileTypeFilter = new List<FilePickerFileType>()
                 {
-                    new FilePickerFileType("ZIP archives (*.zip)")
+                    new("ZIP archives (*.zip)")
                     {
                         Patterns = new List<string>() { "*.zip" },
                         // MimeTypes = new List<string>() { "application/zip" },
@@ -284,7 +321,30 @@ namespace MelonLoader.Installer.ViewModels
             }
         }
 
-        public static void OpenDiscordURL()
+        public async void DoInstall()
+        {
+            if (IsAutomated)
+            {
+                // Fetch release asset and validate it
+                var matchedAsset = SelectedRelease.Assets.Where(x => x.Name == _game.GameArch.GetDescription() + ".zip");
+                var zipFile = new ZipFile(matchedAsset.First().Name, SelectedRelease.TagName,
+                    matchedAsset.First().BrowserDownloadUrl);
+
+                var stream = await zipFile.LoadZipFileAsync();
+                
+                _game.UninstallMelonLoader();
+                _game.InstallMelonLoader(stream);
+                CurrentVersion = _game.MelonLoaderVersion;
+            }
+        }
+
+        public void DoUninstall()
+        {
+            _game.UninstallMelonLoader();
+            CurrentVersion = _game.MelonLoaderVersion;
+        }
+
+        public static void OpenDiscordUrl()
         {
             OpenUrl(Settings.LinkDiscord);
         }

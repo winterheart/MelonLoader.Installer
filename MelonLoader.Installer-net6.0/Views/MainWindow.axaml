@@ -46,27 +46,26 @@
 
 		<TabControl Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="3">
 			<TabItem Header="Install">
-				<Grid ColumnDefinitions="3*,1*" RowDefinitions="1*,1*,1*,1*"
+				<Grid ColumnDefinitions="1*,1*,1*,1*" RowDefinitions="1*,1*,1*,1*"
 				      ShowGridLines="{Binding EnableGridLines}">
 					<!-- Unity game panel selection -->
-					<DockPanel Grid.Row="0" Grid.Column="0">
+					<DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
 						<TextBox Margin="5" VerticalAlignment="Center" Watermark="Select Unity Game..."
 						         Text="{Binding UnityGameExe, Mode=TwoWay}"/>
 					</DockPanel>
-					<DockPanel Grid.Row="0" Grid.Column="1">
+					<DockPanel Grid.Row="0" Grid.Column="3">
 						<Button Margin="5" VerticalAlignment="Center" HorizontalAlignment="Stretch"
 						        Command="{Binding UnityExeOpenFileDialog}">
 							<TextBlock Text="SELECT" HorizontalAlignment="Center" />
 						</Button>
 					</DockPanel>
-					<DockPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center">
+					<DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" HorizontalAlignment="Center">
 						<RadioButton IsChecked="{Binding IsAutomated}" IsDefault="True"
 						             Margin="5" GroupName="Installation Type" Content="Automated"/>
 						<RadioButton Margin="5" GroupName="Installation Type" Content="Manual Zip"/>
 					</DockPanel>
 					<!-- Automated panel selection -->
-					<!-- Grid.Column="0" -->
-					<DockPanel Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2"
+					<DockPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
 					           IsVisible="{Binding IsAutomated}" HorizontalAlignment="Center" >
 						<TextBlock Margin="5" VerticalAlignment="Center" Text="Version:" />
 						<ComboBox x:Name="VersionComboBox" Margin="5" VerticalAlignment="Center"
@@ -80,11 +79,11 @@
 						</ComboBox>
 					</DockPanel>
 					<!-- Manual panel selection -->
-					<DockPanel Grid.Row="2" Grid.Column="0" IsVisible="{Binding !IsAutomated}">
+					<DockPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" IsVisible="{Binding !IsAutomated}">
 						<TextBox Margin="5" VerticalAlignment="Center" Watermark="Select MelonLoader Zip Archive..."
 						         Text="{Binding ManualZip, Mode=TwoWay}" />
 					</DockPanel>
-					<DockPanel Grid.Row="2" Grid.Column="1" IsVisible="{Binding !IsAutomated}">
+					<DockPanel Grid.Row="2" Grid.Column="3" IsVisible="{Binding !IsAutomated}">
 						<Button Margin="5" VerticalAlignment="Center" HorizontalAlignment="Stretch"
 						        Command="{Binding ManualZipOpenFileDialog}">
 							<TextBlock Text="SELECT" HorizontalAlignment="Center" />
@@ -96,6 +95,14 @@
 						        IsEnabled="{Binding EnableInstallButton}"
 						        Command="{Binding DoInstall}">
 							<TextBlock Text="INSTALL" HorizontalAlignment="Center" />
+						</Button>
+					</DockPanel>
+					<!-- Uninstall -->
+					<DockPanel Grid.Column="2" Grid.Row="3" Grid.ColumnSpan="2">
+						<Button Margin="5" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+						        IsEnabled="{Binding EnableUninstallButton}"
+						        Command="{Binding DoUninstall}">
+							<TextBlock Text="UNINSTALL" HorizontalAlignment="Center" />
 						</Button>
 					</DockPanel>
 				</Grid>
