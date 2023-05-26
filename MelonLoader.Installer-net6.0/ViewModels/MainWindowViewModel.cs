@@ -326,9 +326,9 @@ namespace MelonLoader.Installer.ViewModels
             if (IsAutomated)
             {
                 // Fetch release asset and validate it
-                var matchedAsset = SelectedRelease.Assets.Where(x => x.Name == _game.GameArch.GetDescription() + ".zip");
-                var zipFile = new ZipFile(matchedAsset.First().Name, SelectedRelease.TagName,
-                    matchedAsset.First().BrowserDownloadUrl);
+                var matchedAsset = SelectedRelease.Assets.First(x => x.Name == _game.GameArch.GetDescription() + ".zip");
+                var zipFile = new ZipFile(matchedAsset.Name, SelectedRelease.TagName,
+                    matchedAsset.BrowserDownloadUrl);
 
                 var stream = await zipFile.LoadZipFileAsync();
                 
